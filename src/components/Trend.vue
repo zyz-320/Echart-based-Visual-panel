@@ -3,21 +3,35 @@
 -->
 <template>
   <div class="com-container">
-    <div class="title" :style="comStyle">
+    <div class="title"
+         :style="comStyle">
       <span>{{ '▎ ' + showTitle }}</span>
-      <span class="iconfont icon-title" @click="showChoice = !showChoice" :style="comStyle">&#xe6eb;</span>
-      <div class="select-con" v-show="showChoice" :style="marginStyle">
-        <div class="select-item" v-for="item in selectTypes" :key="item.key" @click="handleSelect(item.key)">{{ item.text }}</div>
+      <span class="iconfont icon-title"
+            @click="showChoice = !showChoice"
+            :style="comStyle">&#xe6eb;</span>
+      <div class="select-con"
+           v-show="showChoice"
+           :style="selectStyle">
+        <div class="select-item"
+             v-for="item in selectTypes"
+             :key="item.key"
+             @click="handleSelect(item.key)">{{ item.text }}</div>
       </div>
     </div>
-    <div class="com-chart" ref="trend_ref"></div>
+    <div class="com-chart"
+         ref="trend_ref"></div>
   </div>
 </template>
 
 <script>
+// 引入 Vuex 中的 mapState 函数，特可以将 state 中的属性映射到 当前组件的计算属性中，
+// 然后就可以在当前组件中直接通过 this. 的方式来使用该属性
+import { mapState } from 'vuex'
+// 导入 getThemeValue 用于配置主题对应的样式
+import { getThemeValue } from '@/utils/theme_utils'
 export default {
- name: 'Trend',
-  data() {
+  name: 'Trend',
+  data () {
     return {
       chartInstance: null, // echarts实例对象
       allData: null, // 服务器返回的所有的图表数据
@@ -27,11 +41,11 @@ export default {
     }
   },
   components: {},
-  created() {
+  created () {
     // 在组建创建完成之后，注册得到图表数据之后的回调函数
     this.$socket.registerCallBack('trendData', this.getData)
   },
-  mounted() {
+  mounted () {
     // this.getData()
     // 发送数据给服务器，告诉服务器我现在的需求
     this.$socket.send({
@@ -73,20 +87,26 @@ export default {
     // 设置给标题的样式
     comStyle () {
       return {
-        fontSize: this.titleFontSize + 'px'
+        fontSize: this.titleFontSize + 'px',
+        color: getThemeValue(this.theme).titleColor
       }
     },
-    // 设置下拉框文字的左外边距的样式
-    marginStyle () {
+    // 下拉框的背景颜色以及其中的字体颜色
+    selectStyle () {
       return {
-        marginLeft: this.titleFontSize * 0.9 + 'px'
+        backgroundColor: getThemeValue(this.theme).selectColor,
+        color: getThemeValue(this.theme).titleColor,
+        // 设置下拉框文字的左外边距的样式
+        marginLeft: this.titleFontSize * 0.9 + 'px',
       }
-    }
+    },
+    // 将 state 中的值映射为计算属性，参数数组中的值表示的是需要映射出来的 state 中的属性
+    ...mapState(['theme'])
   },
   methods: {
     // 创建 echarts 实例对象
-    initChart() {
-      this.chartInstance = this.$echarts.init(this.$refs.trend_ref, 'chalk')
+    initChart () {
+      this.chartInstance = this.$echarts.init(this.$refs.trend_ref, this.theme)
       // 初始化图标控制项
       const initOption = {
         grid: { // 坐标轴设置
@@ -116,16 +136,16 @@ export default {
       this.chartInstance.setOption(initOption)
     },
     // 获取服务器的数据，ret 就是服务端发送给前端浏览器的图表的数据
-    getData(ret) {
+    getData (ret) {
       // http://127.0.0.1:8888/api/trend
       // let { data: ret } = await this.$http.get('trend')
-      console.log(ret)
+      // console.log(ret)
       this.allData = ret
       // 更新数据（相当于在promise的then方法中被调用）
       this.updateChart()
     },
     // 更新图表
-    updateChart() {
+    updateChart () {
       // 半透明的颜色值
       const colorArr1 = [
         'rgba(11, 168, 44, 0.5)',
@@ -167,7 +187,7 @@ export default {
                 color: colorArr2[index],
               }
             ])
-          }, 
+          },
         }
       })
       // 图例的数据
@@ -186,7 +206,7 @@ export default {
       this.chartInstance.setOption(dataOption)
     },
     // 屏幕分辨率适配函数，当浏览器的屏幕大小发生变化的时候会调用的函数
-    screenAdapter() {
+    screenAdapter () {
       // console.log(this.$refs.trend_ref.offsetWidth)
       // 设置标题大小
       this.titleFontSize = this.$refs.trend_ref.offsetWidth / 100 * 3.6
@@ -207,29 +227,42 @@ export default {
     },
     // 下拉框标题选择的点击事件处理函数
     handleSelect (currentType) {
-      this.choiceType =  currentType
+      this.choiceType = currentType
       this.updateChart()
       this.showChoice = false
     }
-  }
+  },
+  watch: {
+    theme () {
+      // console.log('发生了主题切换')
+      // 1，销毁当前图表
+      this.chartInstance.dispose()
+      // 2，重新以最新的主题名称初始化图表对象
+      this.initChart()
+      // 3，以最新的屏幕尺寸进行屏幕适配
+      this.screenAdapter()
+      // 4，更新图表数据
+      this.updateChart()
+    }
+  },
 }
 </script>
 
 <style scoped lang="less">
-  .title {
-    position: absolute;
-    left: 20px;
-    top: 20px;
-    color: white;
-    z-index: 10;
-    .icon-title {
-      margin-left: 10px;
-      cursor: pointer; 
-      user-select: none; // 设置用户不能选中元素中的文本
-    }
-    .select-con {
-      cursor: pointer; 
-      background-color: #222733;
-    }
+.title {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  color: white;
+  z-index: 10;
+  .icon-title {
+    margin-left: 10px;
+    cursor: pointer;
+    user-select: none; // 设置用户不能选中元素中的文本
   }
+  .select-con {
+    cursor: pointer;
+    background-color: #222733;
+  }
+}
 </style>

@@ -26,3 +26,7 @@ canvas {
   // 配置画布的圆角
   border-radius: 20px;
 }
+// 为了保证合并之后的组件定位不会错乱，给每个图表组件的定位设置为 relative （保证组件内部定位满足 子绝父相 ）
+.com-container {
+  position: relative;
+}

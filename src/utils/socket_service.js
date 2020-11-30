@@ -61,13 +61,11 @@ export default class SocketService {
           // 调用对应的回调函数
           this.callBackMapping[socketType].call(this, realData)
         } else if (action === 'fullScreen') { // 全屏操作
-          const value = JSON.parse(recvData.value)
           // 调用对应的回调函数
-          this.callBackMapping[socketType].call(this, value)
-        } else if (action === 'themeChange') { // 主体切换操作
-          const value = JSON.parse(recvData.value)
+          this.callBackMapping[socketType].call(this, recvData)
+        } else if (action === 'themeChange') { // 主题切换操作
           // 调用对应的回调函数
-          this.callBackMapping[socketType].call(this, value)
+          this.callBackMapping[socketType].call(this, recvData)
         }
       }
     }

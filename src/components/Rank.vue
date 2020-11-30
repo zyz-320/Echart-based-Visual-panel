@@ -3,14 +3,18 @@
 -->
 <template>
   <div class="com-container">
-    <div class="com-chart" ref="rank_ref"></div>
+    <div class="com-chart"
+         ref="rank_ref"></div>
   </div>
 </template>
 
 <script>
+// 引入 Vuex 中的 mapState 函数，特可以将 state 中的属性映射到 当前组件的计算属性中，
+// 然后就可以在当前组件中直接通过 this. 的方式来使用该属性
+import { mapState } from 'vuex'
 export default {
- name: 'Rank',
-  data() {
+  name: 'Rank',
+  data () {
     return {
       chartInstance: null, // echarts实例对象
       allData: null, // 服务器返回的所有的图表数据
@@ -20,11 +24,11 @@ export default {
     }
   },
   components: {},
-  created() {
+  created () {
     // 在组建创建完成之后，注册得到图表数据之后的回调函数
     this.$socket.registerCallBack('rankData', this.getData)
   },
-  mounted() {
+  mounted () {
     // this.getData()
     // 发送数据给服务器，告诉服务器我现在的需求
     this.$socket.send({
@@ -48,8 +52,8 @@ export default {
   },
   methods: {
     // 创建 echarts 实例对象
-    initChart() {
-      this.chartInstance = this.$echarts.init(this.$refs.rank_ref, 'chalk')
+    initChart () {
+      this.chartInstance = this.$echarts.init(this.$refs.rank_ref, this.theme)
       // 初始化图标控制项
       const initOption = {
         title: {
@@ -94,7 +98,7 @@ export default {
       })
     },
     // 获取服务器的数据
-    getData(ret) {
+    getData (ret) {
       // http://127.0.0.1:8888/api/rank
       // let {data: ret} = await this.$http.get('rank')
       this.allData = ret
@@ -107,7 +111,7 @@ export default {
       this.startInterval()
     },
     // 更新图表
-    updateChart() {
+    updateChart () {
       // 颜色渐变的数据
       const colorArr = [
         ['#0ba82c', '#4ff778'],
@@ -164,7 +168,7 @@ export default {
       this.chartInstance.setOption(dataOption)
     },
     // 屏幕分辨率适配函数，当浏览器的屏幕大小发生变化的时候会调用的函数
-    screenAdapter() {
+    screenAdapter () {
       // console.log(this.$refs.rank_ref.offsetWidth)
       // 设置标题大小
       const titleFontSize = this.$refs.rank_ref.offsetWidth / 100 * 3.6
@@ -176,7 +180,7 @@ export default {
         },
         series: [
           {
-            barWidth:titleFontSize, // 修改柱子的宽度
+            barWidth: titleFontSize, // 修改柱子的宽度
             itemStyle: { // 控制每个条目的样式
               barBorderRadius: [titleFontSize / 2, titleFontSize / 2, 0, 0], // 设置圆角
             }
@@ -188,7 +192,7 @@ export default {
       this.chartInstance.resize()
     },
     // 使用定时器改变 startValue endValue 的值，修改显示的数据
-    startInterval() {
+    startInterval () {
       if (this.timerId) {
         clearInterval(this.timerId)
       }
@@ -202,10 +206,27 @@ export default {
         this.updateChart()
       }, 2000)
     }
-  }
+  },
+  computed: {
+    // 将 state 中的值映射为计算属性，参数数组中的值表示的是需要映射出来的 state 中的属性
+    ...mapState(['theme'])
+  },
+  watch: {
+    theme () {
+      // console.log('发生了主题切换')
+      // 1，销毁当前图表
+      this.chartInstance.dispose()
+      // 2，重新以最新的主题名称初始化图表对象
+      this.initChart()
+      // 3，以最新的屏幕尺寸进行屏幕适配
+      this.screenAdapter()
+      // 4，更新图表数据
+      this.updateChart()
+
+    }
+  },
 }
 </script>
 
 <style scoped lang="less">
-
 </style>

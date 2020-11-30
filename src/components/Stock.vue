@@ -3,14 +3,20 @@
 -->
 <template>
   <div class="com-container">
-    <div class="com-chart" ref="stock_ref"></div>
+    <div class="com-chart"
+         ref="stock_ref"></div>
   </div>
 </template>
 
 <script>
+// 引入 Vuex 中的 mapState 函数，特可以将 state 中的属性映射到 当前组件的计算属性中，
+// 然后就可以在当前组件中直接通过 this. 的方式来使用该属性
+import { mapState } from 'vuex'
+// 导入 getThemeValue 用于配置主题对应的样式
+import { getThemeValue } from '@/utils/theme_utils'
 export default {
- name: 'Stock',
-  data() {
+  name: 'Stock',
+  data () {
     return {
       chartInstance: null, // echarts实例对象
       allData: null, // 服务器返回的所有的图表数据
@@ -19,11 +25,11 @@ export default {
     }
   },
   computed: {},
-  created() {
+  created () {
     // 注册获取到 stock 数据之后的回调函数
     this.$socket.registerCallBack('stockData', this.getData)
   },
-  mounted() {
+  mounted () {
     // this.getData()
     // 向服务端发送数据
     this.$socket.send({
@@ -47,8 +53,8 @@ export default {
   },
   methods: {
     // 创建 echarts 实例对象
-    initChart() {
-      this.chartInstance = this.$echarts.init(this.$refs.stock_ref, 'chalk')
+    initChart () {
+      this.chartInstance = this.$echarts.init(this.$refs.stock_ref, this.theme)
       // 初始化图标控制项
       const initOption = {
         title: {
@@ -68,7 +74,7 @@ export default {
       })
     },
     // 获取服务器的数据
-    getData(ret) {
+    getData (ret) {
       // http://127.0.0.1:8888/api/stockproduct
       // let {data: ret} = await this.$http.get('stock')
       this.allData = ret
@@ -76,7 +82,7 @@ export default {
       this.updateChart()
     },
     // 更新图表
-    updateChart() {
+    updateChart () {
       // 每个圆环的销量扇形圆环部分的渐变颜色值
       const colorArr = [
         ['#0ba82c', '#4ff778'],
@@ -100,7 +106,7 @@ export default {
       const seriesArr = showData.map((item, index) => {
         return {
           type: 'pie',
-          radius: [110, 100], // 通过设置 [外圆半径， 内圆半径] 来显示圆环
+          // radius: [110, 100], // 通过设置 [外圆半径， 内圆半径] 来显示圆环
           hoverAnimation: false, // 关闭鼠标移入到饼图时的动画效果
           labelLine: {
             show: false, // 隐藏标签指示线
@@ -112,7 +118,7 @@ export default {
           center: centerArr[index],
           data: [
             {
-              name: item.name + '\n' + item.sales,
+              name: item.name + '\n\n' + item.sales,
               value: item.sales,
               itemStyle: { // 设置每个扇形圆环的颜色
                 color: new this.$echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -124,13 +130,13 @@ export default {
                     offset: 1,
                     color: colorArr[index][1],
                   }
-                ]), 
+                ]),
               }
             },
             {
               value: item.stock,
               itemStyle: {
-                color: '#333843', // 设置每个扇形圆环的颜色
+                color: getThemeValue(this.theme).stockColor, // 设置每个扇形圆环的颜色
               }
             },
           ]
@@ -144,11 +150,11 @@ export default {
       this.startInterval()
     },
     // 屏幕分辨率适配函数，当浏览器的屏幕大小发生变化的时候会调用的函数
-    screenAdapter() {
+    screenAdapter () {
       // 设置标题大小
       const titleFontSize = this.$refs.stock_ref.offsetWidth / 100 * 3.6
       // 设置圆环的内外半径
-      const innerRadius = titleFontSize * 2
+      const innerRadius = titleFontSize * 2.8
       const outterRadius = innerRadius * 1.125
       const adapterOption = {
         title: {
@@ -160,35 +166,35 @@ export default {
           {
             // 由于图表组件调用 initChart（未配置series） 后就马上调用了 sreenAdapter 此时 updateChart（配置了series） 还没有被调用，
             // 因此每个图表的 type 还没被指明，这样导致了报错
-            type: 'pie', 
+            type: 'pie',
             radius: [outterRadius, innerRadius],
             label: {
               fontSize: titleFontSize / 2,
             },
           },
           {
-            type: 'pie', 
+            type: 'pie',
             radius: [outterRadius, innerRadius],
             label: {
               fontSize: titleFontSize / 2,
             },
           },
           {
-            type: 'pie', 
+            type: 'pie',
             radius: [outterRadius, innerRadius],
             label: {
               fontSize: titleFontSize / 2,
             },
           },
           {
-            type: 'pie', 
+            type: 'pie',
             radius: [outterRadius, innerRadius],
             label: {
               fontSize: titleFontSize / 2,
             },
           },
           {
-            type: 'pie', 
+            type: 'pie',
             radius: [outterRadius, innerRadius],
             label: {
               fontSize: titleFontSize / 2,
@@ -201,7 +207,7 @@ export default {
       this.chartInstance.resize()
     },
     // 定时切换显示的商品种类
-    startInterval() {
+    startInterval () {
       if (this.timerId) {
         clearInterval(this.timerId)
       }
@@ -213,10 +219,27 @@ export default {
         this.updateChart() // 更新页面的显示
       }, 5000)
     }
-  }
+  },
+  computed: {
+    // 将 state 中的值映射为计算属性，参数数组中的值表示的是需要映射出来的 state 中的属性
+    ...mapState(['theme'])
+  },
+  watch: {
+    theme () {
+      // console.log('发生了主题切换')
+      // 1，销毁当前图表
+      this.chartInstance.dispose()
+      // 2，重新以最新的主题名称初始化图表对象
+      this.initChart()
+      // 3，以最新的屏幕尺寸进行屏幕适配
+      this.screenAdapter()
+      // 4，更新图表数据
+      this.updateChart()
+
+    }
+  },
 }
 </script>
 
 <style scoped lang="less">
-
 </style>
