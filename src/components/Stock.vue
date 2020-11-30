@@ -20,9 +20,18 @@ export default {
   },
   computed: {},
   created() {
-    this.getData()
+    // 注册获取到 stock 数据之后的回调函数
+    this.$socket.registerCallBack('stockData', this.getData)
   },
   mounted() {
+    // this.getData()
+    // 向服务端发送数据
+    this.$socket.send({
+      action: 'getData',
+      socketType: 'stockData',
+      chartName: 'stock',
+      value: ''
+    })
     this.initChart()
     window.addEventListener('resize', this.screenAdapter)
     // 刚进入页面的时候就先进行一下图表相对于屏幕的自适应
@@ -33,6 +42,8 @@ export default {
     window.removeEventListener('resize', this.screenAdapter)
     // 取消定时器
     clearInterval(this.timerId)
+    // 清除注册过的回调函数
+    this.$socket.unRegisterCallBack('stockData')
   },
   methods: {
     // 创建 echarts 实例对象
@@ -57,9 +68,9 @@ export default {
       })
     },
     // 获取服务器的数据
-    async getData() {
+    getData(ret) {
       // http://127.0.0.1:8888/api/stockproduct
-      let {data: ret} = await this.$http.get('stock')
+      // let {data: ret} = await this.$http.get('stock')
       this.allData = ret
       // console.log(this.allData)
       this.updateChart()

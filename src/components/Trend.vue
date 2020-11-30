@@ -28,9 +28,18 @@ export default {
   },
   components: {},
   created() {
-    this.getData()
+    // 在组建创建完成之后，注册得到图表数据之后的回调函数
+    this.$socket.registerCallBack('trendData', this.getData)
   },
   mounted() {
+    // this.getData()
+    // 发送数据给服务器，告诉服务器我现在的需求
+    this.$socket.send({
+      action: 'getData',
+      socketType: 'trendData',
+      chartName: 'trend',
+      value: ''
+    })
     this.initChart()
     window.addEventListener('resize', this.screenAdapter)
     // 刚进入页面的时候就先进行一下图表相对于屏幕的自适应
@@ -39,6 +48,8 @@ export default {
   destroyed () {
     // 图表销毁的时候解除事件监听，防止内存泄露
     window.removeEventListener('resize', this.screenAdapter)
+    // 销毁 注册了的得到图表数据之后的回调函数
+    this.$socket.unRegisterCallBack('trendData')
   },
   computed: {
     // 标题下拉框的内容(要过滤掉当前显示的可选条目)
@@ -104,10 +115,10 @@ export default {
       }
       this.chartInstance.setOption(initOption)
     },
-    // 获取服务器的数据
-    async getData() {
+    // 获取服务器的数据，ret 就是服务端发送给前端浏览器的图表的数据
+    getData(ret) {
       // http://127.0.0.1:8888/api/trend
-      let { data: ret } = await this.$http.get('trend')
+      // let { data: ret } = await this.$http.get('trend')
       console.log(ret)
       this.allData = ret
       // 更新数据（相当于在promise的then方法中被调用）

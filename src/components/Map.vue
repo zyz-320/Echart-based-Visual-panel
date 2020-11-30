@@ -21,9 +21,18 @@ export default {
   },
   components: {},
   created() {
-    this.getData()
+    // 在组建创建完成之后，注册得到图表数据之后的回调函数
+    this.$socket.registerCallBack('mapData', this.getData)
   },
   mounted() {
+    // this.getData()
+    // 发送数据给服务器，告诉服务器我现在的需求
+    this.$socket.send({
+      action: 'getData',
+      socketType: 'mapData',
+      chartName: 'map',
+      value: ''
+    })
     this.initChart()
     window.addEventListener('resize', this.screenAdapter)
     // 刚进入页面的时候就先进行一下图表相对于屏幕的自适应
@@ -32,6 +41,8 @@ export default {
   destroyed () {
     // 图表销毁的时候解除事件监听，防止内存泄露
     window.removeEventListener('resize', this.screenAdapter)
+    // 销毁 注册了的得到图表数据之后的回调函数
+    this.$socket.unRegisterCallBack('mapData')
   },
   computed: {},
   methods: {
@@ -88,9 +99,9 @@ export default {
       })
     },
     // 获取服务器的数据
-    async getData() { // 获取散点数据
+    getData(ret) { // 获取散点数据
       // http://127.0.0.1:8888/api/map
-      let { data: ret } = await this.$http.get('map')
+      // let { data: ret } = await this.$http.get('map')
       // console.log(ret)
       this.allData = ret
       // 更新数据（相当于在promise的then方法中被调用）
